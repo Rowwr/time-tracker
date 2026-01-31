@@ -414,8 +414,8 @@
         let timerInterval = null;
         
         // Initialize app
-        async function init() {
-            await loadData();
+        function init() {
+            loadData();
             renderTasks();
             renderHistory();
             renderRecentActivity();
@@ -427,17 +427,18 @@
         }
         
         // Load data from persistent storage
-        async function loadData() {
+        function loadData() {
             try {
-                const tasksData = await window.storage.get(STORAGE_KEYS.TASKS);
-                const historyData = await window.storage.get(STORAGE_KEYS.HISTORY);
-                const activeData = await window.storage.get(STORAGE_KEYS.ACTIVE_TASK);
+                const tasksData = localStorage.getItem(STORAGE_KEYS.TASKS);
+                const historyData = localStorage.getItem(STORAGE_KEYS.HISTORY);
+                const activeData = localStorage.getItem(STORAGE_KEYS.ACTIVE_TASK);
                 
-                tasks = tasksData ? JSON.parse(tasksData.value) : [];
-                history = historyData ? JSON.parse(historyData.value) : [];
-                activeTask = activeData ? JSON.parse(activeData.value) : null;
+                tasks = tasksData ? JSON.parse(tasksData) : [];
+                history = historyData ? JSON.parse(historyData) : [];
+                activeTask = activeData ? JSON.parse(activeData) : null;
             } catch (error) {
-                // Storage not available or keys don't exist
+                // Storage not available or corrupted
+                console.error('Failed to load data:', error);
                 tasks = [];
                 history = [];
                 activeTask = null;
@@ -445,18 +446,19 @@
         }
         
         // Save data to persistent storage
-        async function saveData() {
+        function saveData() {
             try {
-                await window.storage.set(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
-                await window.storage.set(STORAGE_KEYS.HISTORY, JSON.stringify(history));
-                await window.storage.set(STORAGE_KEYS.ACTIVE_TASK, JSON.stringify(activeTask));
+                localStorage.setItem(STORAGE_KEYS.TASKS, JSON.stringify(tasks));
+                localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(history));
+                localStorage.setItem(STORAGE_KEYS.ACTIVE_TASK, JSON.stringify(activeTask));
             } catch (error) {
                 console.error('Failed to save data:', error);
+                alert('Failed to save data. Your browser storage may be full.');
             }
         }
         
         // Add new task
-        async function addTask() {
+        function addTask() {
             const input = document.getElementById('taskInput');
             const taskName = input.value.trim();
             
@@ -469,20 +471,20 @@
             };
             
             tasks.push(task);
-            await saveData();
+            saveData();
             
             input.value = '';
             renderTasks();
         }
         
         // Delete task
-        async function deleteTask(taskId) {
+        function deleteTask(taskId) {
             if (activeTask && activeTask.id === taskId) {
                 stopTimer(taskId);
             }
             
             tasks = tasks.filter(t => t.id !== taskId);
-            await saveData();
+            saveData();
             renderTasks();
         }
         
@@ -524,7 +526,7 @@
         }
         
         // Stop timer
-        async function stopTimer(taskId) {
+        function stopTimer(taskId) {
             if (!activeTask || activeTask.id !== taskId) return;
             
             clearInterval(timerInterval);
@@ -546,7 +548,7 @@
             history.unshift(historyEntry); // Add to beginning
             activeTask = null;
             
-            await saveData();
+            saveData();
             
             renderTasks();
             renderHistory();
